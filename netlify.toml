@@ -1,0 +1,5 @@
+[build]
+  base       = "Your Folder"
+  publish    = "dist"            # use "build" if Create-React-App
+  command    = "npm run build"
+  functions  = "netlify/functions"
