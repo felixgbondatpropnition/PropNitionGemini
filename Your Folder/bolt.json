@@ -1,0 +1,3 @@
+{
+  "ignore": ["netlify/functions/package.json"]
+}

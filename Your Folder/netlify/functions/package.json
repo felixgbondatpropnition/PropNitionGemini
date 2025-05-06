@@ -1,0 +1,14 @@
+{
+  "name": "propnition-functions",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "dev": "echo \"No dev server needed inside functions folder\""
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.3.0",
+    "axios": "^1.6.7",
+    "cheerio": "^1.0.0",
+    "@supabase/supabase-js": "^2.39.7"
+  }
+}
