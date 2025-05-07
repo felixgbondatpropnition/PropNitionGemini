@@ -62,7 +62,6 @@ export const handler: Handler = async (event) => {
   try {
     const model = genAI.getGenerativeModel({
       model: 'gemini-1.5-pro-latest',
-      tools: [{ name: 'web_search' }]
     });
 
     const result = await model.generateContent({
