@@ -2,7 +2,10 @@
 import { Handler } from '@netlify/functions';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+const genAI = new GoogleGenerativeAI(
+  process.env.GEMINI_API_KEY!,
+  { apiVersion: 'v1beta' }   // <-- tell the SDK to use v1beta
+);
 
 /* ── prompt builder ── */
 const buildPrompt = (payload: any) => `
@@ -61,7 +64,7 @@ export const handler: Handler = async (event) => {
 
   try {
     const model = genAI.getGenerativeModel({
-  model: 'models/gemini-1.5-pro-latest',
+  model: 'gemini-pro',       // plain name, works on v1beta
 });
 
     const result = await model.generateContent({
