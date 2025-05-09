@@ -1,12 +1,10 @@
 // netlify/functions/enhance-report.js
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const genAI = new GoogleGenerativeAI(
-  process.env.GEMINI_API_KEY,
-  { apiVersion: "v1beta" } // use v1beta so models/gemini-pro is available
-);
+// initialise the SDK with the default (v1) endpoint
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-/* ---- prompt builder ---- */
+/* ---------- build the prompt text ---------- */
 function buildPrompt(payload) {
   return `
 You are PropNition's senior analyst.
@@ -32,7 +30,7 @@ TASK 2 – Rebuild four key sections from scratch
 
 3) **financialAnalysis** (≈350–450 words)  
    • Token count, price, equity %.  
-   • 5-year cash-on-cash & IRR with assumptions in brief.  
+   • 5-year cash-on-cash & IRR (use the stated assumptions).  
    • Table: Metric | Pre-Tokenization | Post-Tokenization.  
 
 4) **aiAdvice** (≈250–350 words)  
@@ -41,20 +39,20 @@ TASK 2 – Rebuild four key sections from scratch
    • 90-day checklist (bullets).
 
 Tone & formatting  
-• British English; Markdown headings/bullets/tables.  
-• Cite every live figure: "(Source: … 4 May 2025)".  
-• If data missing: write "(no recent figure found)".  
-• OUTPUT exactly one JSON object whose keys match baseSections plus the four above.
+• British English; Markdown headings / bullets / tables.  
+• Cite every live figure: “(Source: … 4 May 2025)”.  
+• If data missing: write “(no recent figure found)”.  
+• OUTPUT **one JSON object** whose keys match baseSections **plus** the four keys above.
 
 Live search  
 You have \`web_search\`; use it for facts.
 
-INPUT
+INPUT  
 ${JSON.stringify(payload, null, 2)}
 `;
 }
 
-/* ---- Netlify handler ---- */
+/* ---------- Netlify Function handler ---------- */
 export async function handler(event) {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method Not Allowed" };
@@ -63,9 +61,8 @@ export async function handler(event) {
   const payload = JSON.parse(event.body || "{}");
 
   try {
-    const model = genAI.getGenerativeModel({
-      model: "models/gemini-pro" // full path required on v1beta
-    });
+    // use the generally-available “gemini-pro” model (v1)
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
     const result = await model.generateContent({
       contents: [{ role: "user", parts: [{ text: buildPrompt(payload) }] }],
