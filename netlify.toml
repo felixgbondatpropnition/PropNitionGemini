@@ -1,5 +1,8 @@
+# netlify.toml  – cleaned and minimal
+
 [build]
-  base       = "Your Folder"
-  publish    = "dist"            # use "build" if Create-React-App
-  command    = "npm run build"
-  functions  = "netlify/functions"
+  command = "npm run build"
+  publish = "dist"
+
+[functions]
+  node_bundler = "esbuild"
