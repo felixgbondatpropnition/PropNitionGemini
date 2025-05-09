@@ -2,12 +2,13 @@
 import { Handler } from '@netlify/functions';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
+/* ── 1. create Gemini client on v1beta ── */
 const genAI = new GoogleGenerativeAI(
-  process.env.GEMINI_API_KEY!,
-  { apiVersion: 'v1beta' }   // <-- tell the SDK to use v1beta
+  process.env.GEMINI_API_KEY!,          // ← your key from Netlify env-var
+  { apiVersion: 'v1beta' }              // ← v1beta is where 1.5-pro lives
 );
 
-/* ── prompt builder ── */
+/* ── 2. build the prompt exactly as before ── */
 const buildPrompt = (payload: any) => `
 You are PropNition's senior analyst.
 
@@ -54,7 +55,7 @@ INPUT
 ${JSON.stringify(payload, null, 2)}
 `;
 
-/* ── handler ── */
+/* ── 3. Netlify Function handler ── */
 export const handler: Handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
@@ -63,9 +64,10 @@ export const handler: Handler = async (event) => {
   const payload = JSON.parse(event.body || '{}');
 
   try {
+    /* ── 4. pick the model – full path required on v1beta ── */
     const model = genAI.getGenerativeModel({
-  model: 'models/gemini-pro', // full path required on v1beta
-});
+      model: 'models/gemini-1.5-pro-latest'
+    });
 
     const result = await model.generateContent({
       contents: [{ role: 'user', parts: [{ text: buildPrompt(payload) }] }],
@@ -75,6 +77,6 @@ export const handler: Handler = async (event) => {
     return { statusCode: 200, body: result.response.text() };
   } catch (err: any) {
     console.error(err);
-    return { statusCode: 500, body: JSON.stringify({ error: 'Gemini failed' }) };
+    return { statusCode: 500, body: JSON.stringify({ error: err.message || 'Gemini failed' }) };
   }
 };
