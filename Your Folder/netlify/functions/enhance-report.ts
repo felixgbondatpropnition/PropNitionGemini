@@ -64,7 +64,7 @@ export const handler: Handler = async (event) => {
 
   try {
     const model = genAI.getGenerativeModel({
-  model: 'gemini-pro',       // plain name, works on v1beta
+  model: 'models/gemini-pro', // full path required on v1beta
 });
 
     const result = await model.generateContent({
