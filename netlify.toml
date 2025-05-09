@@ -1,6 +1,7 @@
-# netlify.toml  – cleaned and minimal
+# netlify.toml  – build from "Your Folder" sub-directory
 
 [build]
+  base    = "Your Folder"   # <-- tells Netlify to cd into this folder first
   command = "npm run build"
   publish = "dist"
 
