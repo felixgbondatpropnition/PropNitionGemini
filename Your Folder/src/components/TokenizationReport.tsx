@@ -234,16 +234,36 @@ const TokenizationReport: React.FC<TokenizationReportProps> = ({ responses }) =>
         <CostBreakdown responses={responses} />
 
         {/* Suitability Analysis */}
-        <Card>
-          <CardHeader><CardTitle>Tokenization Suitability Analysis</CardTitle></CardHeader>
-          <CardContent>
-            {isLoadingAI ? (
-              <p className="py-8 text-gray-600 text-center">Loading AI-enhanced suitability analysis…</p>
-            ) : (
-              <div dangerouslySetInnerHTML={{ __html: aiSections?.suitability || '' }} />
-            )}
-          </CardContent>
-        </Card>
+<Card>
+  <CardHeader>
+    <CardTitle>Tokenization Suitability Analysis</CardTitle>
+  </CardHeader>
+  <CardContent>
+    {isLoadingAI ? (
+      <p className="py-8 text-gray-600 text-center">
+        Loading AI-enhanced suitability analysis…
+      </p>
+    ) : aiSections?.suitability && aiSections.suitability.trim() !== '' ? (
+      <div
+        dangerouslySetInnerHTML={{ __html: aiSections.suitability }}
+      />
+    ) : (
+      /* fallback – build a quick summary from the numeric score */
+      <p className="text-gray-800 leading-relaxed">
+        Based on the quantitative score&nbsp;
+        <strong>{(suitabilityAnalysis?.score ?? 0).toFixed(1)}/10</strong>,
+        this property&nbsp;
+        {suitabilityAnalysis?.score >= 8.5
+          ? 'is an excellent candidate for tokenization.'
+          : suitabilityAnalysis?.score >= 7.5
+          ? 'shows strong potential for tokenization.'
+          : suitabilityAnalysis?.score >= 6.5
+          ? 'may be suitable for tokenization with some optimisation.'
+          : 'is currently unlikely to benefit from tokenization without material improvements.'}
+      </p>
+    )}
+  </CardContent>
+</Card>
 
       </div>
     </div>
