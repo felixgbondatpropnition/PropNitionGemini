@@ -1,10 +1,10 @@
 // netlify/functions/enhance-report.js
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-/* ─── 1. Gemini client ─── */
+/* ─── 1 ◂ Gemini client ─── */
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-/* ─── 2. Prompt builder ─── */
+/* ─── 2 ◂ Prompt builder ─── */
 function buildPrompt(payload) {
   return `
 You are PropNition's senior analyst.
@@ -19,7 +19,7 @@ TASK 1 – Refresh every existing section
 
 TASK 2 – Rebuild four key sections from scratch  
 1) **marketAnalysis** (≈450–550 words)  
-   • ≥3 tokenization headlines ≤30 days old (with date & source).  
+   • ≥ 3 tokenization headlines ≤ 30 days old (with date & source).  
    • Current cap-rate range & vacancy rate (cite source).  
    • 3-year trend + table of 2 opportunities / 2 threats.  
 
@@ -34,13 +34,13 @@ TASK 2 – Rebuild four key sections from scratch
 
 4) **generalAdvice** (≈300–400 words)  
    • Clear, plain-English guidance for the owner about next steps.  
-   • 3–5 numbered recommendations covering strategy, timing,
+   • 3–5 numbered recommendations covering strategy, timing,  
      investor relations, and risk management.
 
 Tone & formatting  
-• British English; markdown; cite every live figure.  
+• British English; Markdown; cite every live figure.  
 • If data missing → “(no recent figure found)”.  
-• Output **one JSON object** with keys = baseSections + the four above.
+• Output **one JSON object** whose keys = baseSections + the four above.
 
 Live search  
 You have \`web_search\` for facts.
@@ -50,7 +50,7 @@ ${JSON.stringify(payload, null, 2)}
 `;
 }
 
-/* ─── 3. Netlify handler ─── */
+/* ─── 3 ◂ Netlify handler ─── */
 export async function handler(event) {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method Not Allowed" };
@@ -60,15 +60,23 @@ export async function handler(event) {
 
   try {
     const model = genAI.getGenerativeModel({
-      model: "models/gemini-1.5-pro"   // ← exact path that exists on the API
+      // full path that exists on the “v1” endpoint
+      model: "models/gemini-1.5-pro"
     });
 
-    const response = await model.generateContent({
+    const result = await model.generateContent({
       contents: [{ role: "user", parts: [{ text: buildPrompt(payload) }] }],
       generationConfig: { temperature: 0.25, maxOutputTokens: 4096 }
     });
 
-    return { statusCode: 200, body: response.response.text() };
+    /* ── 4 ▸ strip ```json fences (Gemini sometimes wraps the result) ── */
+    const raw = result.response.text().trim();
+    const cleaned = raw
+      .replace(/^```(?:json)?\s*/i, "") // opening fence
+      .replace(/```$/i, "")             // closing fence
+      .trim();
+
+    return { statusCode: 200, body: cleaned };
   } catch (err) {
     console.error("Gemini error →", err);
     return { statusCode: 500, body: JSON.stringify({ error: "Gemini failed" }) };
