@@ -17,11 +17,25 @@ Provided:
 TASK 1 – Refresh every existing section  
 • Patch wording so facts are up-to-date but keep structure.
 
-TASK 2 – Build four sections from scratch  
-1) **marketAnalysis** (≈450–550 words)…  
-2) **regulatoryAnalysis** (≈300–400 words)…  
-3) **financialAnalysis** (≈350–450 words)…  
-4) **aiAdvice** (≈250–350 words)…
+TASK 2 – Rebuild four key sections from scratch  
+1) **marketAnalysis** (≈450–550 words)  
+   • ≥3 tokenization headlines ≤30 days old (with date & source).  
+   • Current cap-rate range & vacancy rate (cite source).  
+   • 3-year trend + table of 2 opportunities / 2 threats.  
+
+2) **regulatoryAnalysis** (≈300–400 words)  
+   • Main regulator + most recent guideline (date).  
+   • Concrete compliance steps; sandbox/pilot if any.  
+
+3) **financialAnalysis** (≈350–450 words)  
+   • Token count, price, equity %.  
+   • 5-year cash-on-cash & IRR; list key assumptions.  
+   • Table: Metric | Pre-Tokenization | Post-Tokenization.  
+
+4) **generalAdvice** (≈300–400 words)  
+   • Clear, plain-English guidance for the owner about next steps.  
+   • 3–5 numbered recommendations covering strategy, timing,
+     investor relations, and risk management.
 
 Tone & formatting  
 • British English; markdown; cite every live figure.  
