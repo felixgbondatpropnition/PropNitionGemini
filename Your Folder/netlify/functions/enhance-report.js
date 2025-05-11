@@ -32,10 +32,12 @@ TASK 2 – Rebuild four key sections from scratch
    • 5-year cash-on-cash & IRR; list key assumptions.  
    • Table: Metric | Pre-Tokenization | Post-Tokenization.  
 
-4) **generalAdvice** (≈300–400 words)  
+4) **generalAdvice** (≈500–600 words)  
    • Clear, plain-English guidance for the owner about next steps.  
-   • 3–5 numbered recommendations covering strategy, timing,  
-     investor relations, and risk management.
+   • 5–7 numbered recommendations covering strategy, timing,  
+     investor relations, and risk management (Bullet Points).
+   • Make this text very helpful to the reader of the report and very
+     taylored to their questionaiere answers.
 
 Tone & formatting  
 • British English; Markdown; cite every live figure.  
