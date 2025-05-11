@@ -36,8 +36,7 @@ TASK 2 – Rebuild four key sections from scratch
    • Clear, plain-English guidance for the owner about next steps.  
    • 5–7 numbered recommendations covering strategy, timing,  
      investor relations, and risk management (Bullet Points).
-   • Make this text very helpful to the reader of the report and very
-     taylored to their questionaiere answers.
+   • Make this text very helpful to the reader of the report and very taylored to their questionaiere answers.
 
 Tone & formatting  
 • British English; Markdown; cite every live figure.  
