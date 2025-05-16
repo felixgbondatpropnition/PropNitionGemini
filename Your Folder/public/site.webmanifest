@@ -3,7 +3,7 @@
   "short_name": "Propnition",
   "icons": [
     {
-      "src": "https://gwmhielostbvxelbvcjf.supabase.co/storage/v1/object/public/logos//Propnition.png",
+      "src": "/logo.png",
       "sizes": "192x192",
       "type": "image/png"
     },
