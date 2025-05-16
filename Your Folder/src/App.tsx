@@ -80,11 +80,7 @@ const Navigation = () => {
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center space-x-3">
             <Link to="/" className="flex items-center space-x-2">
-              <img 
-                src="https://gwmhielostbvxelbvcjf.supabase.co/storage/v1/object/public/logos//Propnition.png" 
-                alt="Propnition Logo" 
-                className="h-12 w-auto"
-              />
+              <img src="/logo.png" alt="PropNition Logo" className="h-8 w-auto" />
               <span className="font-bold text-xl text-gray-900">Propnition.com</span>
             </Link>
           </div>
