@@ -236,9 +236,10 @@ function HomePage() {
           <div className="max-w-4xl mx-auto text-center pt-16">
             <div className="mb-8 inline-block">
               <img 
-                src="https://gwmhielostbvxelbvcjf.supabase.co/storage/v1/object/public/logos//Propnition.png" 
-                alt="Propnition Logo" 
-                className="h-32 w-auto mx-auto logo-white"
+                src="/logo.png"                /* now served from /public */
+                alt="PropNition Logo"
+                className="h-32 w-auto mx-auto"
+                />
               />
             </div>
             <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-white to-white/80">
