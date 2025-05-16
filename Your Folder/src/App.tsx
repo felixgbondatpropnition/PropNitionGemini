@@ -240,7 +240,6 @@ function HomePage() {
                 alt="PropNition Logo"
                 className="h-32 w-auto mx-auto"
                 />
-              />
             </div>
             <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-white to-white/80">
               Unlock And Understand The Potential Of Real Estate Tokenization
