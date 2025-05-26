@@ -25,14 +25,14 @@ import CostBreakdown           from './report-sections/CostBreakdown';
 import { calculateEnhancedMetrics } from './enhanced-analysis';
 import { generateAIEnhancedReport } from '../utils/aiReportGenerator';
 
-/* ---------- ✨ NEW: Markdown renderer ---------- */
+/* ---------- Markdown renderer (safe) ---------- */
 import { Markdown } from './Markdown';
 
 /* ---------- PDF helpers ---------- */
 import html2canvas from 'html2canvas';
 import jsPDF       from 'jspdf';
 
-/* ---------- temporary placeholders ---------- */
+/* ---------- placeholders ---------- */
 const placeholder = {
   executiveSummary   : 'Executive summary will appear here.',
   financialAnalytics : 'Financial analytics will appear here.',
@@ -46,7 +46,7 @@ const placeholder = {
   costBreakdown      : 'Cost breakdown will appear here.',
 };
 
-/* ---------- types ---------- */
+/* ---------- props ---------- */
 interface TokenizationReportProps {
   responses: any;
 }
@@ -55,17 +55,17 @@ interface TokenizationReportProps {
 const TokenizationReport: FC<TokenizationReportProps> = ({
   responses,
 }): ReactElement => {
-  /* refs ----------------------------------------------------------------*/
+  /* refs --------------------------------------------------------------- */
   const reportRef = useRef<HTMLDivElement>(null);
 
-  /* state ---------------------------------------------------------------*/
+  /* state -------------------------------------------------------------- */
   const [enhancedMetrics, setEnhancedMetrics] = useState<any>(null);
-  const [aiSections,      setAiSections]      = useState<Record<string, string>>(placeholder);
+  const [aiSections,      setAiSections]      = useState<Record<string,string>>(placeholder);
   const [isLoading,       setIsLoading]       = useState(false);
 
-  /* side-effects: calculations + AI ------------------------------------ */
+  /* 1 ▸ local calculations + call Gemini ------------------------------ */
   useEffect(() => {
-    /* 1 ▸ local calculations (add fall-backs so maths never explodes) */
+    /* --- guard against missing numbers so maths never explodes -------- */
     const safe = {
       ...responses,
       propertyBasics: {
@@ -88,29 +88,31 @@ const TokenizationReport: FC<TokenizationReportProps> = ({
 
     setEnhancedMetrics(calculateEnhancedMetrics(safe));
 
-    /* 2 ▸ call Gemini for enhanced sections */
+    /* --- ask Gemini for enhanced prose -------------------------------- */
     (async () => {
       try {
         setIsLoading(true);
         const updated = await generateAIEnhancedReport(responses, placeholder, {});
         setAiSections({ ...placeholder, ...updated });
       } catch {
-        /* keep placeholders silently on error */
+        /* keep placeholders silently on any error */
       } finally {
         setIsLoading(false);
       }
     })();
   }, [responses]);
 
-  /* side-effect: PDF listener ------------------------------------------ */
+  /* 2 ▸ download-as-PDF listener -------------------------------------- */
   useEffect(() => {
     async function handleDownload() {
       if (!reportRef.current) return;
 
+      /* html → canvas --------------------------------------------------- */
       const canvas = await html2canvas(reportRef.current, { scale: 2 });
       const img    = canvas.toDataURL('image/png');
-      const pdf    = new jsPDF({ unit: 'pt', format: 'a4' });
 
+      /* canvas → PDF ---------------------------------------------------- */
+      const pdf   = new jsPDF({ unit: 'pt', format: 'a4' });
       const pageW = pdf.internal.pageSize.getWidth();
       const pageH = pdf.internal.pageSize.getHeight();
       const ratio = canvas.width / canvas.height;
@@ -134,7 +136,7 @@ const TokenizationReport: FC<TokenizationReportProps> = ({
     return () => window.removeEventListener('download-pdf', handleDownload);
   }, []);
 
-  /* early wait screen ---------------------------------------------------*/
+  /* early wait screen -------------------------------------------------- */
   if (!enhancedMetrics) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -148,7 +150,7 @@ const TokenizationReport: FC<TokenizationReportProps> = ({
     <div ref={reportRef} className="min-h-screen bg-gray-50 pb-12">
       <div className="max-w-6xl mx-auto px-4 space-y-12">
 
-        {/* ── download button ── */}
+        {/* download button */}
         <div className="flex justify-end pt-6">
           <button
             onClick={() => window.dispatchEvent(new Event('download-pdf'))}
@@ -159,7 +161,7 @@ const TokenizationReport: FC<TokenizationReportProps> = ({
           </button>
         </div>
 
-        {/* ── Important notice ── */}
+        {/* Important notice */}
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
           <div className="flex items-start gap-3">
             <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5" />
@@ -169,15 +171,17 @@ const TokenizationReport: FC<TokenizationReportProps> = ({
           </div>
         </div>
 
-        {/* ── Title ── */}
+        {/* Title */}
         <div className="text-center">
           <h1 className="text-3xl font-bold">
             Comprehensive Property Tokenization Analysis
           </h1>
-          <p className="text-gray-600">Generated on {new Date().toLocaleDateString()}</p>
+          <p className="text-gray-600">
+            Generated on {new Date().toLocaleDateString()}
+          </p>
         </div>
 
-        {/* ── Core sections ── */}
+        {/* Core sections (local) */}
         <ExecutiveSummary   responses={responses} />
         <FinancialAnalytics responses={responses} />
 
@@ -223,12 +227,14 @@ const TokenizationReport: FC<TokenizationReportProps> = ({
         />
 
         <NextStepsComponent   metrics={enhancedMetrics} responses={responses} />
+
         <ExitStrategiesSection
-          propertyType           = {responses.propertyBasics?.propertyType                ?? 'Commercial'}
-          propertyValue          = {responses.propertyBasics?.valuation?.currentValue     ?? 1_000_000}
-          tokenizationPercentage = {responses.tokenizationGoals?.tokenizationPercentage   ?? 30}
-          location               = {responses.propertyBasics?.location?.jurisdiction      ?? 'United Kingdom'}
+          propertyType           = {responses.propertyBasics?.propertyType              ?? 'Commercial'}
+          propertyValue          = {responses.propertyBasics?.valuation?.currentValue   ?? 1_000_000}
+          tokenizationPercentage = {responses.tokenizationGoals?.tokenizationPercentage ?? 30}
+          location               = {responses.propertyBasics?.location?.jurisdiction    ?? 'United Kingdom'}
         />
+
         <CostBreakdown responses={responses} />
 
         {/* AI General Advice (Markdown) */}
