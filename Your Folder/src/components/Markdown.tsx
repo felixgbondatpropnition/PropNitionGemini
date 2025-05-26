@@ -1,78 +1,64 @@
 /*  src/components/Markdown.tsx
     --------------------------------------------------------------
-    Renders Gemini’s Markdown with nice Tailwind styling.
-*/
+    Renders Gemini’s Markdown with Tailwind styling.
+    (Now drops the `node` helper-prop before hitting real DOM.)  */
 
 import ReactMarkdown                from 'react-markdown';
 import remarkGfm                    from 'remark-gfm';
 import type { ComponentPropsWithoutRef } from 'react';
 
-/* reusable helper */
-const cls = (...c: string[]) => c.filter(Boolean).join(' ');
+/* utility ------------------------------------------------------*/
+const cx = (...c: string[]) => c.filter(Boolean).join(' ');
 
-/* Tailwind-flavoured replacements for common tags */
+/* helper to strip `node` prop */
+function stripNode<T extends { node?: unknown }>(props: T) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { node, ...rest } = props;
+  return rest as Omit<T, 'node'>;
+}
+
+/* Tailwind flavoured elements ---------------------------------*/
 const M = {
-  /* headings --------------------------------------------------- */
-  h1: ({ children, ...rest }: ComponentPropsWithoutRef<'h1'>) => (
-    <h2 {...rest} className={cls('mt-6 mb-3 text-2xl font-semibold text-brand-700', rest.className)}>
-      {children}
-    </h2>
+  /* headings */
+  h1: (p: any) => (
+    <h2 {...stripNode(p)} className={cx('mt-6 mb-3 text-2xl font-semibold text-brand-700', p.className)} />
   ),
-  h2: ({ children, ...rest }: ComponentPropsWithoutRef<'h2'>) => (
-    <h3 {...rest} className={cls('mt-5 mb-2 text-xl font-semibold text-brand-700', rest.className)}>
-      {children}
-    </h3>
+  h2: (p: any) => (
+    <h3 {...stripNode(p)} className={cx('mt-5 mb-2 text-xl font-semibold text-brand-700', p.className)} />
   ),
-  h3: ({ children, ...rest }: ComponentPropsWithoutRef<'h3'>) => (
-    <h4 {...rest} className={cls('mt-4 mb-2 text-lg font-semibold', rest.className)}>
-      {children}
-    </h4>
+  h3: (p: any) => (
+    <h4 {...stripNode(p)} className={cx('mt-4 mb-2 text-lg font-semibold', p.className)} />
   ),
 
-  /* paragraph -------------------------------------------------- */
-  p: ({ children, ...rest }: ComponentPropsWithoutRef<'p'>) => (
-    <p {...rest} className={cls('mb-4 leading-relaxed', rest.className)}>
-      {children}
-    </p>
+  /* paragraph */
+  p:  (p: any) => (
+    <p  {...stripNode(p)} className={cx('mb-4 leading-relaxed', p.className)} />
   ),
 
-  /* lists ------------------------------------------------------ */
-  ul: ({ children, ...rest }: ComponentPropsWithoutRef<'ul'>) => (
-    <ul {...rest} className={cls('list-disc pl-6 space-y-1', rest.className)}>
-      {children}
-    </ul>
+  /* lists */
+  ul: (p: any) => (
+    <ul {...stripNode(p)} className={cx('list-disc pl-6 space-y-1', p.className)} />
   ),
-  ol: ({ children, ...rest }: ComponentPropsWithoutRef<'ol'>) => (
-    <ol {...rest} className={cls('list-decimal pl-6 space-y-1', rest.className)}>
-      {children}
-    </ol>
+  ol: (p: any) => (
+    <ol {...stripNode(p)} className={cx('list-decimal pl-6 space-y-1', p.className)} />
   ),
 
-  /* tables ----------------------------------------------------- */
-  table: ({ children, ...rest }: ComponentPropsWithoutRef<'table'>) => (
+  /* table + parts */
+  table: ({ children, ...r }: ComponentPropsWithoutRef<'table'> & { node?: unknown }) => (
     <div className="my-4 overflow-x-auto">
-      <table
-        {...rest}
-        className={cls('min-w-full text-sm border border-gray-200', rest.className)}
-      >
+      <table {...stripNode(r)} className={cx('min-w-full text-sm border border-gray-200', r.className)}>
         {children}
       </table>
     </div>
   ),
-  thead: ({ children, ...rest }: ComponentPropsWithoutRef<'thead'>) => (
-    <thead {...rest} className={cls('bg-gray-100', rest.className)}>
-      {children}
-    </thead>
+  thead: (p: any) => (
+    <thead {...stripNode(p)} className={cx('bg-gray-100', p.className)} />
   ),
-  th: ({ children, ...rest }: ComponentPropsWithoutRef<'th'>) => (
-    <th {...rest} className={cls('px-3 py-1 border font-semibold', rest.className)}>
-      {children}
-    </th>
+  th: (p: any) => (
+    <th {...stripNode(p)} className={cx('px-3 py-1 border font-semibold', p.className)} />
   ),
-  td: ({ children, ...rest }: ComponentPropsWithoutRef<'td'>) => (
-    <td {...rest} className={cls('px-3 py-1 border', rest.className)}>
-      {children}
-    </td>
+  td: (p: any) => (
+    <td {...stripNode(p)} className={cx('px-3 py-1 border', p.className)} />
   ),
 };
 
