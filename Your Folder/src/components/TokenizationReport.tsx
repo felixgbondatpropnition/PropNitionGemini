@@ -16,32 +16,34 @@ import {
 } from './enhanced-report-sections';
 
 import PlatformRecommendations from './PlatformRecommendations';
-import NextStepsComponent from './next-steps-component';
-import ExitStrategiesSection from './exit-strategies/ExitStrategiesSection';
-import ExecutiveSummary from './report-sections/ExecutiveSummary';
-import FinancialAnalytics from './report-sections/FinancialAnalytics';
-import CostBreakdown from './report-sections/CostBreakdown';
+import NextStepsComponent      from './next-steps-component';
+import ExitStrategiesSection   from './exit-strategies/ExitStrategiesSection';
+import ExecutiveSummary        from './report-sections/ExecutiveSummary';
+import FinancialAnalytics      from './report-sections/FinancialAnalytics';
+import CostBreakdown           from './report-sections/CostBreakdown';
 
 import { calculateEnhancedMetrics } from './enhanced-analysis';
-import { calculateTokenizationSuitabilityScore } from '../utils/ReportGenerator';
 import { generateAIEnhancedReport } from '../utils/aiReportGenerator';
+
+/* ---------- ✨ NEW: Markdown renderer ---------- */
+import { Markdown } from './Markdown';
 
 /* ---------- PDF helpers ---------- */
 import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+import jsPDF       from 'jspdf';
 
 /* ---------- temporary placeholders ---------- */
 const placeholder = {
-  executiveSummary: 'Executive summary will appear here.',
-  financialAnalytics: 'Financial analytics will appear here.',
-  riskAnalysis: 'Risk analysis will appear here.',
-  marketAnalysis: 'Market analysis will appear here.',
-  regulatoryAnalysis: 'Regulatory analysis will appear here.',
-  financialAnalysis: 'Financial analysis will appear here.',
-  generalAdvice: 'General advice will appear here.',
-  nextSteps: 'Next steps will appear here.',
-  exitStrategies: 'Exit strategies will appear here.',
-  costBreakdown: 'Cost breakdown will appear here.',
+  executiveSummary   : 'Executive summary will appear here.',
+  financialAnalytics : 'Financial analytics will appear here.',
+  riskAnalysis       : 'Risk analysis will appear here.',
+  marketAnalysis     : 'Market analysis will appear here.',
+  regulatoryAnalysis : 'Regulatory analysis will appear here.',
+  financialAnalysis  : 'Financial analysis will appear here.',
+  generalAdvice      : 'General advice will appear here.',
+  nextSteps          : 'Next steps will appear here.',
+  exitStrategies     : 'Exit strategies will appear here.',
+  costBreakdown      : 'Cost breakdown will appear here.',
 };
 
 /* ---------- types ---------- */
@@ -58,84 +60,62 @@ const TokenizationReport: FC<TokenizationReportProps> = ({
 
   /* state ---------------------------------------------------------------*/
   const [enhancedMetrics, setEnhancedMetrics] = useState<any>(null);
-  const [benchmarkData, setBenchmarkData] = useState<any>(null);
-  const [aiSections, setAiSections] = useState<Record<string, string>>(
-    placeholder
-  );
-  const [isLoading, setIsLoading] = useState(false);
+  const [aiSections,      setAiSections]      = useState<Record<string, string>>(placeholder);
+  const [isLoading,       setIsLoading]       = useState(false);
 
-  /* side-effects: calculations + AI -------------------------------------*/
+  /* side-effects: calculations + AI ------------------------------------ */
   useEffect(() => {
-    /* 1 ▸ local calculations */
+    /* 1 ▸ local calculations (add fall-backs so maths never explodes) */
     const safe = {
       ...responses,
       propertyBasics: {
         ...responses.propertyBasics,
-        valuation: {
+        valuation : {
           ...responses.propertyBasics?.valuation,
-          currentValue:
-            responses.propertyBasics?.valuation?.currentValue ?? 1_000_000,
+          currentValue: responses.propertyBasics?.valuation?.currentValue ?? 1_000_000,
         },
         propertyType: responses.propertyBasics?.propertyType ?? 'Commercial',
         location: {
           ...responses.propertyBasics?.location,
-          jurisdiction:
-            responses.propertyBasics?.location?.jurisdiction ?? 'United Kingdom',
+          jurisdiction: responses.propertyBasics?.location?.jurisdiction ?? 'United Kingdom',
         },
       },
       tokenizationGoals: {
         ...responses.tokenizationGoals,
-        tokenizationPercentage:
-          responses.tokenizationGoals?.tokenizationPercentage ?? 30,
+        tokenizationPercentage: responses.tokenizationGoals?.tokenizationPercentage ?? 30,
       },
     };
 
     setEnhancedMetrics(calculateEnhancedMetrics(safe));
 
-    /* 2 ▸ simple static benchmarks */
-    setBenchmarkData({
-      capRate: 5.8,
-      operatingExpenseRatio: 42,
-      occupancyRate: 92,
-      tokenizedCapRate: 6.2,
-      tokenizedOperatingExpenseRatio: 38,
-      tokenizedOccupancyRate: 94,
-    });
-
-    /* 3 ▸ call Gemini */
+    /* 2 ▸ call Gemini for enhanced sections */
     (async () => {
       try {
         setIsLoading(true);
-        const updated = await generateAIEnhancedReport(
-          responses,
-          placeholder,
-          {}
-        );
+        const updated = await generateAIEnhancedReport(responses, placeholder, {});
         setAiSections({ ...placeholder, ...updated });
       } catch {
-        /* silent – placeholders stay */
+        /* keep placeholders silently on error */
       } finally {
         setIsLoading(false);
       }
     })();
   }, [responses]);
 
-  /* side-effect: register PDF listener ----------------------------------*/
+  /* side-effect: PDF listener ------------------------------------------ */
   useEffect(() => {
     async function handleDownload() {
       if (!reportRef.current) return;
 
-      /* canvas → image --------------------------------------------------*/
       const canvas = await html2canvas(reportRef.current, { scale: 2 });
-      const img   = canvas.toDataURL('image/png');
-
-      /* image → PDF -----------------------------------------------------*/
+      const img    = canvas.toDataURL('image/png');
       const pdf    = new jsPDF({ unit: 'pt', format: 'a4' });
-      const pageW  = pdf.internal.pageSize.getWidth();
-      const pageH  = pdf.internal.pageSize.getHeight();
-      const ratio  = canvas.width / canvas.height;
-      const imgW   = pageW;
-      const imgH   = pageW / ratio;
+
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const ratio = canvas.width / canvas.height;
+      const imgW  = pageW;
+      const imgH  = pageW / ratio;
 
       let y = 0;
       pdf.addImage(img, 'PNG', 0, y, imgW, imgH);
@@ -155,7 +135,7 @@ const TokenizationReport: FC<TokenizationReportProps> = ({
   }, []);
 
   /* early wait screen ---------------------------------------------------*/
-  if (!enhancedMetrics || !benchmarkData) {
+  if (!enhancedMetrics) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <p className="text-gray-600">Generating report…</p>
@@ -184,8 +164,7 @@ const TokenizationReport: FC<TokenizationReportProps> = ({
           <div className="flex items-start gap-3">
             <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5" />
             <p className="text-sm text-amber-700">
-              This report is provided for educational purposes only and is not
-              professional advice.
+              This report is provided for educational purposes only and is not professional advice.
             </p>
           </div>
         </div>
@@ -195,16 +174,14 @@ const TokenizationReport: FC<TokenizationReportProps> = ({
           <h1 className="text-3xl font-bold">
             Comprehensive Property Tokenization Analysis
           </h1>
-          <p className="text-gray-600">
-            Generated on {new Date().toLocaleDateString()}
-          </p>
+          <p className="text-gray-600">Generated on {new Date().toLocaleDateString()}</p>
         </div>
 
         {/* ── Core sections ── */}
-        <ExecutiveSummary responses={responses} />
+        <ExecutiveSummary   responses={responses} />
         <FinancialAnalytics responses={responses} />
 
-        {/* AI Market */}
+        {/* AI Market (Markdown) */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
@@ -215,96 +192,55 @@ const TokenizationReport: FC<TokenizationReportProps> = ({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
-              <p className="text-center text-gray-500">Loading…</p>
-            ) : (
-              <div
-                dangerouslySetInnerHTML={{ __html: aiSections.marketAnalysis }}
-              />
-            )}
+            {isLoading
+              ? <p className="text-center text-gray-500">Loading…</p>
+              : <Markdown>{aiSections.marketAnalysis}</Markdown>}
           </CardContent>
         </Card>
 
+        {/* Risk Analysis (local) */}
         <RiskAnalysisSection metrics={enhancedMetrics} />
 
-        {/* AI Regulatory */}
+        {/* AI Regulatory (Markdown) */}
         <Card>
-          <CardHeader>
-            <CardTitle>Jurisdictional & Regulatory Analysis</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle>Jurisdictional & Regulatory Analysis</CardTitle></CardHeader>
           <CardContent>
-            {isLoading ? (
-              <p className="text-center text-gray-500">Loading…</p>
-            ) : (
-              <div
-                dangerouslySetInnerHTML={{
-                  __html: aiSections.regulatoryAnalysis,
-                }}
-              />
-            )}
+            {isLoading
+              ? <p className="text-center text-gray-500">Loading…</p>
+              : <Markdown>{aiSections.regulatoryAnalysis}</Markdown>}
           </CardContent>
         </Card>
 
+        {/* Platform recommendations & other local sections */}
         <PlatformRecommendations
           propertyDetails={{
-            type:
-              responses.propertyBasics?.propertyType ??
-              'Commercial',
-            value:
-              responses.propertyBasics?.valuation?.currentValue ??
-              1_000_000,
-            location:
-              responses.propertyBasics?.location?.jurisdiction ??
-              'United Kingdom',
-            targetInvestorType:
-              responses.investorProfile?.targetInvestors?.type ??
-              'Institutional',
-            minInvestmentTarget:
-              responses.investorProfile?.targetInvestors
-                ?.minimumInvestment ?? 10_000,
+            type   : responses.propertyBasics?.propertyType                ?? 'Commercial',
+            value  : responses.propertyBasics?.valuation?.currentValue     ?? 1_000_000,
+            location: responses.propertyBasics?.location?.jurisdiction     ?? 'United Kingdom',
+            targetInvestorType: responses.investorProfile?.targetInvestors?.type ?? 'Institutional',
+            minInvestmentTarget: responses.investorProfile?.targetInvestors?.minimumInvestment ?? 10_000,
           }}
         />
 
-        <NextStepsComponent
-          metrics={enhancedMetrics}
-          responses={responses}
-        />
-
+        <NextStepsComponent   metrics={enhancedMetrics} responses={responses} />
         <ExitStrategiesSection
-          propertyType={
-            responses.propertyBasics?.propertyType ?? 'Commercial'
-          }
-          propertyValue={
-            responses.propertyBasics?.valuation?.currentValue ??
-            1_000_000
-          }
-          tokenizationPercentage={
-            responses.tokenizationGoals?.tokenizationPercentage ??
-            30
-          }
-          location={
-            responses.propertyBasics?.location?.jurisdiction ??
-            'United Kingdom'
-          }
+          propertyType           = {responses.propertyBasics?.propertyType                ?? 'Commercial'}
+          propertyValue          = {responses.propertyBasics?.valuation?.currentValue     ?? 1_000_000}
+          tokenizationPercentage = {responses.tokenizationGoals?.tokenizationPercentage   ?? 30}
+          location               = {responses.propertyBasics?.location?.jurisdiction      ?? 'United Kingdom'}
         />
-
         <CostBreakdown responses={responses} />
 
-        {/* AI General Advice */}
+        {/* AI General Advice (Markdown) */}
         <Card>
-          <CardHeader>
-            <CardTitle>General Advice</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle>General Advice</CardTitle></CardHeader>
           <CardContent>
-            {isLoading ? (
-              <p className="text-center text-gray-500">Loading…</p>
-            ) : (
-              <div
-                dangerouslySetInnerHTML={{ __html: aiSections.generalAdvice }}
-              />
-            )}
+            {isLoading
+              ? <p className="text-center text-gray-500">Loading…</p>
+              : <Markdown>{aiSections.generalAdvice}</Markdown>}
           </CardContent>
         </Card>
+
       </div>
     </div>
   );
