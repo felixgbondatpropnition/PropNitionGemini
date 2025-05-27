@@ -9,35 +9,31 @@ import React, {
 import { AlertTriangle, Info, Download } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 
-import {
-  MarketAnalysisSection,
-  RiskAnalysisSection,
-  JurisdictionalAnalysisSection,
-} from './enhanced-report-sections';
+import { RiskAnalysisSection }      from './enhanced-report-sections';
+import PlatformRecommendations       from './PlatformRecommendations';
+import NextStepsComponent            from './next-steps-component';
+import ExitStrategiesSection         from './exit-strategies/ExitStrategiesSection';
+import ExecutiveSummary              from './report-sections/ExecutiveSummary';
+import FinancialAnalytics            from './report-sections/FinancialAnalytics';
+import CostBreakdown                 from './report-sections/CostBreakdown';
 
-import PlatformRecommendations from './PlatformRecommendations';
-import NextStepsComponent      from './next-steps-component';
-import ExitStrategiesSection   from './exit-strategies/ExitStrategiesSection';
-import ExecutiveSummary        from './report-sections/ExecutiveSummary';
-import FinancialAnalytics      from './report-sections/FinancialAnalytics';
-import CostBreakdown           from './report-sections/CostBreakdown';
+import { calculateEnhancedMetrics }  from './enhanced-analysis';
+import { generateAIEnhancedReport }  from '../utils/aiReportGenerator';
 
-import { calculateEnhancedMetrics } from './enhanced-analysis';
-import { generateAIEnhancedReport } from '../utils/aiReportGenerator';
+/* Markdown renderer */
+import { Markdown }                  from './Markdown';
 
-/* ---------- Markdown renderer (safe) ---------- */
-import { Markdown } from './Markdown';
+/* PDF helpers */
+import html2canvas                   from 'html2canvas';
+import jsPDF                         from 'jspdf';
 
-/* ---------- PDF helpers ---------- */
-import html2canvas from 'html2canvas';
-import jsPDF       from 'jspdf';
-
-/* ---------- placeholders ---------- */
+/* ------------------------------------------------------------------ */
+/* placeholders                                                       */
 const placeholder = {
   executiveSummary   : 'Executive summary will appear here.',
   financialAnalytics : 'Financial analytics will appear here.',
   riskAnalysis       : 'Risk analysis will appear here.',
-  marketAnalysis     : 'Market analysis will appear here.',
+  strategicAnalysis  : 'Strategic analysis will appear here.',
   regulatoryAnalysis : 'Regulatory analysis will appear here.',
   financialAnalysis  : 'Financial analysis will appear here.',
   generalAdvice      : 'General advice will appear here.',
@@ -46,26 +42,19 @@ const placeholder = {
   costBreakdown      : 'Cost breakdown will appear here.',
 };
 
-/* ---------- props ---------- */
-interface TokenizationReportProps {
-  responses: any;
-}
+/* ------------------------------------------------------------------ */
+/* component                                                          */
+interface TokenizationReportProps { responses: any; }
 
-/* ===================================================================== */
-const TokenizationReport: FC<TokenizationReportProps> = ({
-  responses,
-}): ReactElement => {
-  /* refs --------------------------------------------------------------- */
+const TokenizationReport: FC<TokenizationReportProps> = ({ responses }): ReactElement => {
   const reportRef = useRef<HTMLDivElement>(null);
 
-  /* state -------------------------------------------------------------- */
   const [enhancedMetrics, setEnhancedMetrics] = useState<any>(null);
   const [aiSections,      setAiSections]      = useState<Record<string,string>>(placeholder);
   const [isLoading,       setIsLoading]       = useState(false);
 
-  /* 1 ▸ local calculations + call Gemini ------------------------------ */
+  /* ── 1. local calcs + Gemini call ---------------------------------- */
   useEffect(() => {
-    /* --- guard against missing numbers so maths never explodes -------- */
     const safe = {
       ...responses,
       propertyBasics: {
@@ -88,30 +77,24 @@ const TokenizationReport: FC<TokenizationReportProps> = ({
 
     setEnhancedMetrics(calculateEnhancedMetrics(safe));
 
-    /* --- ask Gemini for enhanced prose -------------------------------- */
     (async () => {
       try {
         setIsLoading(true);
         const updated = await generateAIEnhancedReport(responses, placeholder, {});
         setAiSections({ ...placeholder, ...updated });
-      } catch {
-        /* keep placeholders silently on any error */
       } finally {
         setIsLoading(false);
       }
     })();
   }, [responses]);
 
-  /* 2 ▸ download-as-PDF listener -------------------------------------- */
+  /* ── 2. PDF download listener -------------------------------------- */
   useEffect(() => {
     async function handleDownload() {
       if (!reportRef.current) return;
-
-      /* html → canvas --------------------------------------------------- */
       const canvas = await html2canvas(reportRef.current, { scale: 2 });
       const img    = canvas.toDataURL('image/png');
 
-      /* canvas → PDF ---------------------------------------------------- */
       const pdf   = new jsPDF({ unit: 'pt', format: 'a4' });
       const pageW = pdf.internal.pageSize.getWidth();
       const pageH = pdf.internal.pageSize.getHeight();
@@ -122,13 +105,11 @@ const TokenizationReport: FC<TokenizationReportProps> = ({
       let y = 0;
       pdf.addImage(img, 'PNG', 0, y, imgW, imgH);
       y -= pageH;
-
       while (Math.abs(y) < imgH) {
         pdf.addPage();
         pdf.addImage(img, 'PNG', 0, y, imgW, imgH);
         y -= pageH;
       }
-
       pdf.save('tokenization-report.pdf');
     }
 
@@ -136,7 +117,7 @@ const TokenizationReport: FC<TokenizationReportProps> = ({
     return () => window.removeEventListener('download-pdf', handleDownload);
   }, []);
 
-  /* early wait screen -------------------------------------------------- */
+  /* ── loading guard -------------------------------------------------- */
   if (!enhancedMetrics) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -145,7 +126,7 @@ const TokenizationReport: FC<TokenizationReportProps> = ({
     );
   }
 
-  /* =================================================================== */
+  /* ─────────────────────────────────────────────────────────────────── */
   return (
     <div ref={reportRef} className="min-h-screen bg-gray-50 pb-12">
       <div className="max-w-6xl mx-auto px-4 space-y-12">
@@ -166,30 +147,26 @@ const TokenizationReport: FC<TokenizationReportProps> = ({
           <div className="flex items-start gap-3">
             <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5" />
             <p className="text-sm text-amber-700">
-              This report is provided for educational purposes only and is not professional advice.
+              This report is provided for educational purposes only and does not constitute professional advice.
             </p>
           </div>
         </div>
 
         {/* Title */}
         <div className="text-center">
-          <h1 className="text-3xl font-bold">
-            Comprehensive Property Tokenization Analysis
-          </h1>
-          <p className="text-gray-600">
-            Generated on {new Date().toLocaleDateString()}
-          </p>
+          <h1 className="text-3xl font-bold">Comprehensive Property Tokenization Analysis</h1>
+          <p className="text-gray-600">Generated on {new Date().toLocaleDateString()}</p>
         </div>
 
-        {/* Core sections (local) */}
+        {/* Local core sections */}
         <ExecutiveSummary   responses={responses} />
         <FinancialAnalytics responses={responses} />
 
-        {/* AI Market (Markdown) */}
+        {/* ── NEW: Strategic Analysis (AI) ── */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              <span>Market Analysis</span>
+              <span>Strategic Analysis</span>
               <span className="flex items-center gap-1 text-xs text-gray-500">
                 <Info size={12} /> AI-Enhanced
               </span>
@@ -198,14 +175,14 @@ const TokenizationReport: FC<TokenizationReportProps> = ({
           <CardContent>
             {isLoading
               ? <p className="text-center text-gray-500">Loading…</p>
-              : <Markdown>{aiSections.marketAnalysis}</Markdown>}
+              : <Markdown>{aiSections.strategicAnalysis}</Markdown>}
           </CardContent>
         </Card>
 
-        {/* Risk Analysis (local) */}
+        {/* Risk (local) */}
         <RiskAnalysisSection metrics={enhancedMetrics} />
 
-        {/* AI Regulatory (Markdown) */}
+        {/* Regulatory (AI) */}
         <Card>
           <CardHeader><CardTitle>Jurisdictional & Regulatory Analysis</CardTitle></CardHeader>
           <CardContent>
@@ -215,18 +192,18 @@ const TokenizationReport: FC<TokenizationReportProps> = ({
           </CardContent>
         </Card>
 
-        {/* Platform recommendations & other local sections */}
+        {/* Remaining local sections */}
         <PlatformRecommendations
           propertyDetails={{
-            type   : responses.propertyBasics?.propertyType                ?? 'Commercial',
-            value  : responses.propertyBasics?.valuation?.currentValue     ?? 1_000_000,
-            location: responses.propertyBasics?.location?.jurisdiction     ?? 'United Kingdom',
-            targetInvestorType: responses.investorProfile?.targetInvestors?.type ?? 'Institutional',
-            minInvestmentTarget: responses.investorProfile?.targetInvestors?.minimumInvestment ?? 10_000,
+            type                : responses.propertyBasics?.propertyType ?? 'Commercial',
+            value               : responses.propertyBasics?.valuation?.currentValue ?? 1_000_000,
+            location            : responses.propertyBasics?.location?.jurisdiction ?? 'United Kingdom',
+            targetInvestorType  : responses.investorProfile?.targetInvestors?.type ?? 'Institutional',
+            minInvestmentTarget : responses.investorProfile?.targetInvestors?.minimumInvestment ?? 10_000,
           }}
         />
 
-        <NextStepsComponent   metrics={enhancedMetrics} responses={responses} />
+        <NextStepsComponent metrics={enhancedMetrics} responses={responses} />
 
         <ExitStrategiesSection
           propertyType           = {responses.propertyBasics?.propertyType              ?? 'Commercial'}
@@ -237,7 +214,7 @@ const TokenizationReport: FC<TokenizationReportProps> = ({
 
         <CostBreakdown responses={responses} />
 
-        {/* AI General Advice (Markdown) */}
+        {/* General advice (AI) */}
         <Card>
           <CardHeader><CardTitle>General Advice</CardTitle></CardHeader>
           <CardContent>
@@ -251,5 +228,5 @@ const TokenizationReport: FC<TokenizationReportProps> = ({
     </div>
   );
 };
-/* ===================================================================== */
+
 export default TokenizationReport;
