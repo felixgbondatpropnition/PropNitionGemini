@@ -192,7 +192,7 @@ const TokenizationReport: FC<TokenizationReportProps> = ({ responses }): ReactEl
           </CardContent>
         </Card>
 
-        {/* Remaining local sections */}
+        {/* Platform recommendations */}
         <PlatformRecommendations
           propertyDetails={{
             type                : responses.propertyBasics?.propertyType ?? 'Commercial',
@@ -202,6 +202,13 @@ const TokenizationReport: FC<TokenizationReportProps> = ({ responses }): ReactEl
             minInvestmentTarget : responses.investorProfile?.targetInvestors?.minimumInvestment ?? 10_000,
           }}
         />
+
+        {/* ── disclaimer (static) ── */}
+        <div className="mt-4 rounded-md bg-blue-50 border border-blue-200 p-4 text-sm text-blue-800">
+          <strong>Note:</strong> Each recommended platform follows its own onboarding
+          workflow, fee schedule and compliance checks. Contact the platforms directly to
+          confirm how much of the technical tokenisation process they will handle on your behalf.
+        </div>
 
         <NextStepsComponent metrics={enhancedMetrics} responses={responses} />
 
