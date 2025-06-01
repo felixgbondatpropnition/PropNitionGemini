@@ -20,15 +20,13 @@ import CostBreakdown                 from './report-sections/CostBreakdown';
 import { calculateEnhancedMetrics }  from './enhanced-analysis';
 import { generateAIEnhancedReport }  from '../utils/aiReportGenerator';
 
-/* Markdown renderer */
 import { Markdown }                  from './Markdown';
 
-/* PDF helpers */
 import html2canvas                   from 'html2canvas';
 import jsPDF                         from 'jspdf';
 
 /* ------------------------------------------------------------------ */
-/* placeholders                                                       */
+/* placeholders                                                        */
 const placeholder = {
   executiveSummary   : 'Executive summary will appear here.',
   financialAnalytics : 'Financial analytics will appear here.',
@@ -43,7 +41,6 @@ const placeholder = {
 };
 
 /* ------------------------------------------------------------------ */
-/* component                                                          */
 interface TokenizationReportProps { responses: any; }
 
 const TokenizationReport: FC<TokenizationReportProps> = ({ responses }): ReactElement => {
@@ -52,8 +49,9 @@ const TokenizationReport: FC<TokenizationReportProps> = ({ responses }): ReactEl
   const [enhancedMetrics, setEnhancedMetrics] = useState<any>(null);
   const [aiSections,      setAiSections]      = useState<Record<string,string>>(placeholder);
   const [isLoading,       setIsLoading]       = useState(false);
+  const [autoDone,        setAutoDone]        = useState(false);   /* ← auto-PDF */
 
-  /* ── 1. local calcs + Gemini call ---------------------------------- */
+  /* ── 1 ▸ local calcs + Gemini call --------------------------------- */
   useEffect(() => {
     const safe = {
       ...responses,
@@ -88,7 +86,7 @@ const TokenizationReport: FC<TokenizationReportProps> = ({ responses }): ReactEl
     })();
   }, [responses]);
 
-  /* ── 2. PDF download listener -------------------------------------- */
+  /* ── 2 ▸ manual PDF button handler --------------------------------- */
   useEffect(() => {
     async function handleDownload() {
       if (!reportRef.current) return;
@@ -97,25 +95,30 @@ const TokenizationReport: FC<TokenizationReportProps> = ({ responses }): ReactEl
 
       const pdf   = new jsPDF({ unit: 'pt', format: 'a4' });
       const pageW = pdf.internal.pageSize.getWidth();
-      const pageH = pdf.internal.pageSize.getHeight();
       const ratio = canvas.width / canvas.height;
-      const imgW  = pageW;
-      const imgH  = pageW / ratio;
-
-      let y = 0;
-      pdf.addImage(img, 'PNG', 0, y, imgW, imgH);
-      y -= pageH;
-      while (Math.abs(y) < imgH) {
-        pdf.addPage();
-        pdf.addImage(img, 'PNG', 0, y, imgW, imgH);
-        y -= pageH;
-      }
+      pdf.addImage(img, 'PNG', 0, 0, pageW, pageW / ratio);
       pdf.save('tokenization-report.pdf');
     }
 
     window.addEventListener('download-pdf', handleDownload);
     return () => window.removeEventListener('download-pdf', handleDownload);
   }, []);
+
+  /* ── 3 ▸ AUTO-PDF after AI ready ----------------------------------- */
+  useEffect(() => {
+    if (isLoading || autoDone) return;          // wait until finished once
+    (async () => {
+      if (!reportRef.current) return;
+      const canvas = await html2canvas(reportRef.current, { scale: 2 });
+      const img    = canvas.toDataURL('image/png');
+      const pdf    = new jsPDF({ unit:'pt', format:'a4' });
+      const pageW  = pdf.internal.pageSize.getWidth();
+      const ratio  = canvas.width / canvas.height;
+      pdf.addImage(img,'PNG',0,0,pageW,pageW/ratio);
+      pdf.save('tokenization-report.pdf');
+      setAutoDone(true);
+    })();
+  }, [isLoading, autoDone]);
 
   /* ── loading guard -------------------------------------------------- */
   if (!enhancedMetrics) {
@@ -131,7 +134,7 @@ const TokenizationReport: FC<TokenizationReportProps> = ({ responses }): ReactEl
     <div ref={reportRef} className="min-h-screen bg-gray-50 pb-12">
       <div className="max-w-6xl mx-auto px-4 space-y-12">
 
-        {/* download button */}
+        {/* manual download button */}
         <div className="flex justify-end pt-6">
           <button
             onClick={() => window.dispatchEvent(new Event('download-pdf'))}
@@ -162,7 +165,7 @@ const TokenizationReport: FC<TokenizationReportProps> = ({ responses }): ReactEl
         <ExecutiveSummary   responses={responses} />
         <FinancialAnalytics responses={responses} />
 
-        {/* ── NEW: Strategic Analysis (AI) ── */}
+        {/* Strategic Analysis (AI) */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
@@ -203,7 +206,7 @@ const TokenizationReport: FC<TokenizationReportProps> = ({ responses }): ReactEl
           }}
         />
 
-        {/* ── disclaimer (static) ── */}
+        {/* Disclaimer */}
         <div className="mt-4 rounded-md bg-blue-50 border border-blue-200 p-4 text-sm text-blue-800">
           <strong>Note:</strong> Each recommended platform follows its own onboarding
           workflow, fee schedule and compliance checks. Contact the platforms directly to
@@ -221,7 +224,7 @@ const TokenizationReport: FC<TokenizationReportProps> = ({ responses }): ReactEl
 
         <CostBreakdown responses={responses} />
 
-        {/* General advice (AI) */}
+        {/* General Advice (AI) */}
         <Card>
           <CardHeader><CardTitle>General Advice</CardTitle></CardHeader>
           <CardContent>
@@ -230,7 +233,6 @@ const TokenizationReport: FC<TokenizationReportProps> = ({ responses }): ReactEl
               : <Markdown>{aiSections.generalAdvice}</Markdown>}
           </CardContent>
         </Card>
-
       </div>
     </div>
   );
