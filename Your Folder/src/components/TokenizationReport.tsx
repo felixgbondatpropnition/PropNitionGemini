@@ -51,6 +51,91 @@ const TokenizationReport: FC<TokenizationReportProps> = ({ responses }): ReactEl
   const [isLoading,       setIsLoading]       = useState(false);
   const [autoDone,        setAutoDone]        = useState(false);   /* ← auto-PDF */
 
+  /* ── Paginated PDF generation function ----------------------------- */
+  const generatePaginatedPDF = async () => {
+    if (!reportRef.current) return;
+
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const margin = 10;
+    const contentWidth = pageWidth - (2 * margin);
+    const contentHeight = pageHeight - (2 * margin);
+
+    // Clone the report element to avoid modifying the original
+    const clonedReport = reportRef.current.cloneNode(true) as HTMLElement;
+    clonedReport.style.position = 'absolute';
+    clonedReport.style.left = '-9999px';
+    clonedReport.style.width = `${contentWidth * 3.7795275591}px`; // Convert mm to px (96 DPI)
+    document.body.appendChild(clonedReport);
+
+    try {
+      // Generate canvas with higher quality
+      const canvas = await html2canvas(clonedReport, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        windowWidth: contentWidth * 3.7795275591,
+        backgroundColor: '#ffffff'
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const imgHeight = (canvas.height * contentWidth) / canvas.width;
+      
+      let yPosition = 0;
+      let pageNumber = 0;
+
+      while (yPosition < imgHeight) {
+        if (pageNumber > 0) {
+          pdf.addPage();
+        }
+
+        // Calculate the source rectangle for this page
+        const sourceY = (yPosition * canvas.width) / contentWidth;
+        const sourceHeight = Math.min(
+          (contentHeight * canvas.width) / contentWidth,
+          canvas.height - sourceY
+        );
+
+        // Create a temporary canvas for this page slice
+        const pageCanvas = document.createElement('canvas');
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = sourceHeight;
+        const ctx = pageCanvas.getContext('2d');
+        
+        if (ctx) {
+          ctx.drawImage(
+            canvas,
+            0, sourceY, canvas.width, sourceHeight,
+            0, 0, canvas.width, sourceHeight
+          );
+
+          const pageImgData = pageCanvas.toDataURL('image/png');
+          const pageImgHeight = (sourceHeight * contentWidth) / canvas.width;
+          
+          pdf.addImage(
+            pageImgData,
+            'PNG',
+            margin,
+            margin,
+            contentWidth,
+            pageImgHeight
+          );
+        }
+
+        yPosition += contentHeight;
+        pageNumber++;
+      }
+
+      // Save the PDF
+      pdf.save('tokenization-report.pdf');
+
+    } finally {
+      // Clean up the cloned element
+      document.body.removeChild(clonedReport);
+    }
+  };
+
   /* ── 1 ▸ local calcs + Gemini call --------------------------------- */
   useEffect(() => {
     const safe = {
@@ -89,15 +174,7 @@ const TokenizationReport: FC<TokenizationReportProps> = ({ responses }): ReactEl
   /* ── 2 ▸ manual PDF button handler --------------------------------- */
   useEffect(() => {
     async function handleDownload() {
-      if (!reportRef.current) return;
-      const canvas = await html2canvas(reportRef.current, { scale: 2 });
-      const img    = canvas.toDataURL('image/png');
-
-      const pdf   = new jsPDF({ unit: 'pt', format: 'a4' });
-      const pageW = pdf.internal.pageSize.getWidth();
-      const ratio = canvas.width / canvas.height;
-      pdf.addImage(img, 'PNG', 0, 0, pageW, pageW / ratio);
-      pdf.save('tokenization-report.pdf');
+      await generatePaginatedPDF();
     }
 
     window.addEventListener('download-pdf', handleDownload);
@@ -108,14 +185,7 @@ const TokenizationReport: FC<TokenizationReportProps> = ({ responses }): ReactEl
   useEffect(() => {
     if (isLoading || autoDone) return;          // wait until finished once
     (async () => {
-      if (!reportRef.current) return;
-      const canvas = await html2canvas(reportRef.current, { scale: 2 });
-      const img    = canvas.toDataURL('image/png');
-      const pdf    = new jsPDF({ unit:'pt', format:'a4' });
-      const pageW  = pdf.internal.pageSize.getWidth();
-      const ratio  = canvas.width / canvas.height;
-      pdf.addImage(img,'PNG',0,0,pageW,pageW/ratio);
-      pdf.save('tokenization-report.pdf');
+      await generatePaginatedPDF();
       setAutoDone(true);
     })();
   }, [isLoading, autoDone]);
